@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -10,8 +11,10 @@ import (
 	"waysbeans/models"
 	"waysbeans/repositories"
 
-	// "github.com/cloudinary/cloudinary-go/v2"
-	// "github.com/cloudinary/cloudinary-go/v2/api/uploader"
+	"context"
+
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
@@ -93,27 +96,27 @@ func (h *handlerProduct) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Declare Context Background, Cloud Name, API Key, API Secret ...
-	// var ctx = context.Background()
-	// var CLOUD_NAME = os.Getenv("CLOUD_NAME")
-	// var API_KEY = os.Getenv("API_KEY")
-	// var API_SECRET = os.Getenv("API_SECRET")
+	var ctx = context.Background()
+	var CLOUD_NAME = os.Getenv("CLOUD_NAME")
+	var API_KEY = os.Getenv("API_KEY")
+	var API_SECRET = os.Getenv("API_SECRET")
 
-	// // Add your Cloudinary credentials ...
-	// cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
+	// Add your Cloudinary credentials ...
+	cld, _ := cloudinary.NewFromParams(CLOUD_NAME, API_KEY, API_SECRET)
 
-	// // Upload file to Cloudinary ...
-	// resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "waysbeans"})
+	// Upload file to Cloudinary ...
+	resp, err := cld.Upload.Upload(ctx, filepath, uploader.UploadParams{Folder: "waysbeans"})
 
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// }
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 	product := models.Product{
 		Name:        request.Name,
 		Stock:       request.Stock,
 		Price:       request.Price,
 		Description: request.Description,
-		Image:       filepath,
+		Image:       resp.SecureURL,
 	}
 
 	product, err = h.ProductRepository.CreateProduct(product)
@@ -137,7 +140,7 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(mux.Vars(r)["id"])
 
 	dataContex := r.Context().Value("dataFile") // add this code
-	filename := dataContex.(string)             // add this code
+	filepath := dataContex.(string)             // add this code
 
 	stock, _ := strconv.Atoi(r.FormValue("stock"))
 	price, _ := strconv.Atoi(r.FormValue("price"))
@@ -163,7 +166,7 @@ func (h *handlerProduct) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	product.Stock = request.Stock
 	product.Price = request.Price
 	product.Description = request.Description
-	product.Image = filename
+	product.Image = filepath
 
 	product, err = h.ProductRepository.UpdateProduct(product)
 	if err != nil {
